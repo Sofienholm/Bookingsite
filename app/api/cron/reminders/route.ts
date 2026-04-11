@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { addDays, format } from "date-fns";
-import {
-  sendOwnerReminder,
-  sendCustomerReminder,
-} from "@/lib/sms/twilio";
+import { sendOwnerReminder } from "@/lib/sms/twilio";
 
 // GET /api/cron/reminders — køres dagligt (f.eks. via Vercel Cron)
 // Beskyttet af CRON_SECRET header
@@ -27,16 +24,7 @@ export async function GET(req: NextRequest) {
     const results = await Promise.allSettled(
       snap.docs.map(async (doc) => {
         const b = doc.data();
-        await Promise.all([
-          sendOwnerReminder(b.customerName, b.treatmentName, b.date, b.time),
-          sendCustomerReminder(
-            b.customerPhone,
-            b.customerName,
-            b.treatmentName,
-            b.date,
-            b.time
-          ),
-        ]);
+        await sendOwnerReminder(b.customerName, b.treatmentName, b.date, b.time);
       })
     );
 

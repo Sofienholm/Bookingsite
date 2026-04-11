@@ -7,12 +7,14 @@ interface Props {
   bookingId: string;
   slotId: string;
   googleEventId?: string;
+  onCancelled?: () => void;
 }
 
 export default function CancelBookingButton({
   bookingId,
   slotId,
   googleEventId,
+  onCancelled,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -28,8 +30,12 @@ export default function CancelBookingButton({
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
-      router.refresh();
-    } catch (err) {
+      if (onCancelled) {
+        onCancelled();
+      } else {
+        router.refresh();
+      }
+    } catch {
       alert("Kunne ikke annullere booking.");
     } finally {
       setLoading(false);

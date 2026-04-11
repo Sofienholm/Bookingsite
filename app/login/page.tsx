@@ -37,11 +37,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f3] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#F0F0FA] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-medium text-gray-800">
-            Admin
+          <h1 className="text-3xl font-display font-medium text-rose-900">
+            Neglebiksen
           </h1>
           <p className="text-gray-400 text-sm mt-1">Log ind for at fortsætte</p>
         </div>

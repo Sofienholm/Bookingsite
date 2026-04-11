@@ -36,11 +36,11 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f3]">
+    <div className="min-h-screen bg-[#F0F0FA]">
       {/* Header */}
       <header className="py-10 text-center">
-        <h1 className="text-3xl font-display font-medium text-gray-800 tracking-tight">
-          Negleklinik
+        <h1 className="text-3xl font-display font-medium text-rose-900 tracking-tight">
+          Neglebiksen
         </h1>
         <p className="text-gray-400 text-sm mt-1">Book din tid online</p>
       </header>

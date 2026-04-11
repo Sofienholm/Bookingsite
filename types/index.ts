@@ -16,6 +16,7 @@ export interface Slot {
   time: string;        // "13:00"
   status: SlotStatus;
   bookingId?: string;
+  forceOpen?: boolean; // Admin kan tvinge en tid åben selv om ugen er fuld
 }
 
 // ── Bookinger ─────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Book tid | Negleklinik",
+  title: "Book tid | Neglebiksen",
   description: "Book din behandling nemt og hurtigt online.",
 };
 

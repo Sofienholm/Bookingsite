@@ -22,10 +22,8 @@ export async function PATCH(
   }
 
   try {
-    const { status } = await req.json();
-    if (!["available", "closed"].includes(status)) {
-      return NextResponse.json({ success: false, error: "Ugyldig status." }, { status: 400 });
-    }
+    const body = await req.json();
+    const { status, forceOpen } = body;
 
     const db = getAdminDb();
     const ref = db.collection("slots").doc(params.id);
@@ -42,7 +40,23 @@ export async function PATCH(
       );
     }
 
-    await ref.update({ status });
+    // Byg opdatering
+    const update: Record<string, unknown> = {};
+    if (status !== undefined) {
+      if (!["available", "closed"].includes(status)) {
+        return NextResponse.json({ success: false, error: "Ugyldig status." }, { status: 400 });
+      }
+      update.status = status;
+    }
+    if (forceOpen !== undefined) {
+      update.forceOpen = Boolean(forceOpen);
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ success: false, error: "Ingen ændringer." }, { status: 400 });
+    }
+
+    await ref.update(update);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("PATCH /api/admin/slots/[id]:", err);

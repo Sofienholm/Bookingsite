@@ -39,8 +39,10 @@ export async function GET() {
     }));
 
     // Filtrer slots baseret på bookingregler
+    // forceOpen-slots springer uge-reglen over (men dag-reglen gælder stadig)
     const filteredSlots = slots.filter((slot) => {
       if (isDayFull(slot.date, bookedDates)) return false;
+      if (slot.forceOpen) return true;
       if (isWeekFull(slot.date, bookedDates)) return false;
       return true;
     });
@@ -54,15 +56,19 @@ export async function GET() {
       dateMap.get(slot.date)!.push(slot);
     }
 
-    for (const [date, slotList] of dateMap) {
+    dateMap.forEach((slotList, date) => {
       grouped.push({ date, slots: slotList });
-    }
+    });
 
     return NextResponse.json({ success: true, data: grouped });
   } catch (err) {
     console.error("GET /api/slots error:", err);
+
     return NextResponse.json(
-      { success: false, error: "Kunne ikke hente tider." },
+      {
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      },
       { status: 500 }
     );
   }

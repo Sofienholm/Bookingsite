@@ -25,11 +25,11 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f3]">
+    <div className="min-h-screen bg-[#F0F0FA]">
       {/* Top nav */}
       <header className="bg-white border-b border-rose-100 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <span className="font-display font-medium text-gray-800 text-lg">
-          Negleklinik Admin
+        <span className="font-display font-medium text-rose-900 text-lg">
+          Neglebiksen Admin
         </span>
         <button
           onClick={handleLogout}

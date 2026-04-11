@@ -5,25 +5,18 @@ import { useRouter } from "next/navigation";
 import { Slot } from "@/types";
 import { cn } from "@/lib/utils";
 
-const STATUS_LABELS: Record<Slot["status"], string> = {
-  available: "Ledig",
-  booked: "Booket",
-  closed: "Lukket",
-};
-
-const STATUS_STYLES: Record<Slot["status"], string> = {
-  available: "bg-green-50 text-green-600 border-green-200",
-  booked: "bg-rose-50 text-rose-600 border-rose-200",
-  closed: "bg-gray-100 text-gray-400 border-gray-200",
-};
-
 interface Props {
   slot: Slot;
+  weekIsFull: boolean;
 }
 
-export default function SlotActions({ slot }: Props) {
+export default function SlotActions({ slot, weekIsFull }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Er denne tid "skjult" for kunder pga. uge-reglen?
+  const isHiddenByWeekRule =
+    weekIsFull && slot.status === "available" && !slot.forceOpen;
 
   async function handleDelete() {
     if (!confirm(`Slet tid kl. ${slot.time}?`)) return;
@@ -61,17 +54,94 @@ export default function SlotActions({ slot }: Props) {
     }
   }
 
+  async function handleForceOpen() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/slots/${slot.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forceOpen: true }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      router.refresh();
+    } catch {
+      alert("Fejl.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemoveForceOpen() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/slots/${slot.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forceOpen: false }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      router.refresh();
+    } catch {
+      alert("Fejl.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Bestem udseende
+  let style = "bg-green-50 text-green-600 border-green-200";
+  let label = "Ledig";
+
+  if (slot.status === "booked") {
+    style = "bg-rose-50 text-rose-600 border-rose-200";
+    label = "Booket";
+  } else if (slot.status === "closed") {
+    style = "bg-gray-100 text-gray-400 border-gray-200";
+    label = "Lukket";
+  } else if (isHiddenByWeekRule) {
+    style = "bg-amber-50 text-amber-500 border-amber-200";
+    label = "Skjult (uge fuld)";
+  } else if (slot.forceOpen) {
+    style = "bg-blue-50 text-blue-600 border-blue-200";
+    label = "Tvunget åben";
+  }
+
   return (
     <div
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-xl border text-sm",
-        STATUS_STYLES[slot.status]
+        style
       )}
     >
       <span className="font-medium">{slot.time}</span>
-      <span className="text-xs opacity-70">{STATUS_LABELS[slot.status]}</span>
+      <span className="text-xs opacity-70">{label}</span>
 
-      {slot.status !== "booked" && (
+      {/* Skjult pga. uge-regel → "Åbn alligevel" */}
+      {isHiddenByWeekRule && (
+        <button
+          onClick={handleForceOpen}
+          disabled={loading}
+          className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 px-2 py-0.5 rounded-lg transition disabled:opacity-30"
+        >
+          {loading ? "..." : "Åbn alligevel"}
+        </button>
+      )}
+
+      {/* Tvunget åben → "Skjul igen" */}
+      {slot.forceOpen && slot.status === "available" && (
+        <button
+          onClick={handleRemoveForceOpen}
+          disabled={loading}
+          className="text-xs text-blue-400 hover:text-blue-600 underline transition disabled:opacity-30"
+        >
+          {loading ? "..." : "Skjul igen"}
+        </button>
+      )}
+
+      {/* Normal luk/åbn og slet — kun for ikke-bookede, ikke-skjulte */}
+      {slot.status !== "booked" && !isHiddenByWeekRule && (
         <>
           <button
             onClick={handleToggleClose}

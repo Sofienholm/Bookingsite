@@ -9,26 +9,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Periwinkle-palette baseret på Neglebiksen-logo
         rose: {
-          25: "#fff8f8",
-          50: "#fff1f2",
-          100: "#ffe4e6",
-          200: "#fecdd3",
-          300: "#fda4af",
-          400: "#fb7185",
-          500: "#f43f5e",
-          600: "#e11d48",
-          700: "#be123c",
-          800: "#9f1239",
-          900: "#881337",
+          25: "#F5F5FD",
+          50: "#EDEDFC",
+          100: "#DCDCF8",
+          200: "#C4C4F0",
+          300: "#A8A8E4",
+          400: "#8B8BE8",
+          500: "#7474D4",
+          600: "#5E5EC0",
+          700: "#4A4AAC",
+          800: "#383898",
+          900: "#2E2E5E",
         },
-        blush: {
-          DEFAULT: "#f9e4ea",
-          dark: "#f0c6d3",
+        accent: {
+          DEFAULT: "#F0F07A",
+          dark: "#D8D85A",
+          light: "#F7F7AA",
         },
         sand: {
-          DEFAULT: "#faf6f3",
-          dark: "#f0e8e1",
+          DEFAULT: "#F0F0FA",
+          dark: "#E2E2F0",
         },
       },
       fontFamily: {

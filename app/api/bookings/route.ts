@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { isDayFull, isWeekFull } from "@/lib/booking-rules";
 import { TREATMENTS } from "@/lib/treatments";
-import {
-  notifyOwnerNewBooking,
-  notifyCustomerConfirmation,
-} from "@/lib/sms/twilio";
+import { notifyOwnerNewBooking } from "@/lib/sms/twilio";
 import { createCalendarEvent } from "@/lib/calendar/google";
 import { formatPhone } from "@/lib/utils";
 import { Booking } from "@/types";
@@ -61,7 +58,8 @@ export async function POST(req: NextRequest) {
       if (isDayFull(date, bookedDates)) {
         throw new Error("Denne dag er fuldt booket.");
       }
-      if (isWeekFull(date, bookedDates)) {
+      // forceOpen-slots springer uge-reglen over
+      if (!slotData.forceOpen && isWeekFull(date, bookedDates)) {
         throw new Error("Denne uge er fuldt booket.");
       }
 
@@ -94,13 +92,6 @@ export async function POST(req: NextRequest) {
       notifyOwnerNewBooking(
         customerName,
         phone,
-        treatment.name,
-        booking.date,
-        booking.time
-      ),
-      notifyCustomerConfirmation(
-        phone,
-        customerName,
         treatment.name,
         booking.date,
         booking.time
