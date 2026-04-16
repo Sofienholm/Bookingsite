@@ -2,21 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --font-inter: 'Inter', system-ui, sans-serif;
-  --font-playfair: 'Playfair Display', Georgia, serif;
+  --font-poppins: 'Poppins', system-ui, sans-serif;
 }
 
 @layer base {
   body {
     @apply bg-sand text-gray-800 antialiased;
-    font-family: var(--font-inter);
+    font-family: var(--font-poppins);
   }
 
   h1, h2, h3 {
-    font-family: var(--font-playfair);
+    font-family: var(--font-poppins);
   }
 }
 
