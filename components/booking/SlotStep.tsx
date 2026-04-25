@@ -1,7 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { useEffect, useState, useMemo } from "react";
+import {
+  format,
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  addMonths,
+  subMonths,
+  isSameMonth,
+  isSameDay,
+  isBefore,
+  startOfDay,
+} from "date-fns";
 import { da } from "date-fns/locale";
 import { Slot, Treatment } from "@/types";
 import Button from "@/components/ui/Button";
@@ -20,6 +34,8 @@ interface Props {
   onBack: () => void;
 }
 
+const WEEKDAY_LABELS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
+
 export default function SlotStep({
   treatment,
   selectedSlot,
@@ -30,6 +46,8 @@ export default function SlotStep({
   const [grouped, setGrouped] = useState<GroupedSlots[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -48,6 +66,39 @@ export default function SlotStep({
     }
     load();
   }, []);
+
+  // Set af datoer der har ledige slots
+  const availableDates = useMemo(() => {
+    const dates = new Set<string>();
+    grouped.forEach(({ date }) => dates.add(date));
+    return dates;
+  }, [grouped]);
+
+  // Slots for den valgte dato
+  const slotsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    const group = grouped.find((g) => g.date === selectedDate);
+    return group?.slots || [];
+  }, [grouped, selectedDate]);
+
+  // Generer kalender-dage for visningen
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    // Ugen starter mandag (weekStartsOn: 1)
+    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+    const days: Date[] = [];
+    let day = calStart;
+    while (isBefore(day, addDays(calEnd, 1))) {
+      days.push(day);
+      day = addDays(day, 1);
+    }
+    return days;
+  }, [currentMonth]);
+
+  const today = startOfDay(new Date());
 
   if (loading) {
     return (
@@ -91,33 +142,101 @@ export default function SlotStep({
         Behandling: <span className="font-medium text-gray-700">{treatment.name}</span>
       </p>
 
-      <div className="space-y-6">
-        {grouped.map(({ date, slots }) => (
-          <div key={date}>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              {format(parseISO(date), "EEEE d. MMMM", { locale: da })}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {slots.map((slot) => (
-                <button
-                  key={slot.id}
-                  onClick={() => onSelect(slot)}
-                  className={cn(
-                    "px-5 py-2.5 rounded-2xl text-sm font-medium border transition-all duration-150",
-                    selectedSlot?.id === slot.id
-                      ? "bg-rose-400 text-white border-rose-400 shadow-sm"
-                      : "bg-white text-gray-700 border-rose-200 hover:border-rose-400 hover:text-rose-500"
-                  )}
-                >
-                  {slot.time}
-                </button>
-              ))}
-            </div>
+      {/* Måned-navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+          className="w-8 h-8 rounded-xl hover:bg-rose-50 flex items-center justify-center transition text-gray-500 hover:text-gray-700"
+        >
+          ←
+        </button>
+        <h3 className="text-sm font-semibold text-gray-700 capitalize">
+          {format(currentMonth, "MMMM yyyy", { locale: da })}
+        </h3>
+        <button
+          onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+          className="w-8 h-8 rounded-xl hover:bg-rose-50 flex items-center justify-center transition text-gray-500 hover:text-gray-700"
+        >
+          →
+        </button>
+      </div>
+
+      {/* Ugedage header */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {WEEKDAY_LABELS.map((d) => (
+          <div key={d} className="text-center text-xs font-medium text-gray-400 uppercase py-1">
+            {d}
           </div>
         ))}
       </div>
 
-      <div className="mt-8 flex gap-3">
+      {/* Kalender-grid */}
+      <div className="grid grid-cols-7 gap-1 mb-6">
+        {calendarDays.map((day, i) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const isCurrentMonth = isSameMonth(day, currentMonth);
+          const isAvailable = availableDates.has(dateStr);
+          const isPast = isBefore(day, today);
+          const isSelected = selectedDate === dateStr;
+          const isToday = isSameDay(day, today);
+
+          return (
+            <button
+              key={i}
+              disabled={!isAvailable || !isCurrentMonth || isPast}
+              onClick={() => setSelectedDate(dateStr)}
+              className={cn(
+                "aspect-square rounded-xl text-sm font-medium transition-all duration-150 flex items-center justify-center relative",
+                !isCurrentMonth && "text-gray-200",
+                isCurrentMonth && !isAvailable && "text-gray-300 cursor-default",
+                isCurrentMonth && isPast && "text-gray-200 cursor-default",
+                isCurrentMonth && isAvailable && !isSelected && "text-gray-700 bg-rose-50 hover:bg-rose-100 cursor-pointer border border-rose-200",
+                isSelected && "bg-rose-400 text-white shadow-sm border border-rose-400",
+                isToday && !isSelected && isAvailable && "ring-2 ring-rose-300",
+                isToday && !isSelected && !isAvailable && "ring-1 ring-gray-300",
+              )}
+            >
+              {format(day, "d")}
+              {isAvailable && isCurrentMonth && !isPast && !isSelected && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-rose-400" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tider for valgt dato */}
+      {selectedDate && slotsForSelectedDate.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-500 mb-3 capitalize">
+            {format(parseISO(selectedDate), "EEEE d. MMMM", { locale: da })}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {slotsForSelectedDate.map((slot) => (
+              <button
+                key={slot.id}
+                onClick={() => onSelect(slot)}
+                className={cn(
+                  "px-5 py-2.5 rounded-2xl text-sm font-medium border transition-all duration-150",
+                  selectedSlot?.id === slot.id
+                    ? "bg-rose-400 text-white border-rose-400 shadow-sm"
+                    : "bg-white text-gray-700 border-rose-200 hover:border-rose-400 hover:text-rose-500"
+                )}
+              >
+                {slot.time}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedDate && slotsForSelectedDate.length === 0 && (
+        <p className="text-sm text-gray-400 mb-6 text-center">
+          Ingen ledige tider denne dag.
+        </p>
+      )}
+
+      <div className="flex gap-3">
         <Button variant="secondary" onClick={onBack} size="lg">
           Tilbage
         </Button>

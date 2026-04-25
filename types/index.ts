@@ -34,6 +34,8 @@ export interface Booking {
   status: BookingStatus;
   createdAt: string;    // ISO timestamp
   googleEventId?: string;
+  comment?: string;     // Kundens kommentar
+  imageUrl?: string;    // URL til vedhæftet billede (Firebase Storage)
 }
 
 // ── API responses ──────────────────────────────────────────────

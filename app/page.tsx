@@ -18,7 +18,7 @@ export default function BookingPage() {
   const steps: Step[] = ["treatment", "slot", "customer", "confirmation"];
   const stepIndex = steps.indexOf(step);
 
-  async function handleConfirm(name: string, phone: string) {
+  async function handleConfirm(name: string, phone: string, comment?: string, imageUrl?: string) {
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,6 +27,8 @@ export default function BookingPage() {
         treatmentId: treatment!.id,
         customerName: name,
         customerPhone: phone,
+        comment: comment || undefined,
+        imageUrl: imageUrl || undefined,
       }),
     });
     const json = await res.json();
@@ -36,10 +38,20 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F0FA]">
+    <div className="min-h-screen">
+      {/* Admin-link */}
+      <div className="absolute top-4 right-4 z-10">
+        <a
+          href="/login"
+          className="text-xs text-rose-300 hover:text-rose-500 transition-colors"
+        >
+          Admin
+        </a>
+      </div>
+
       {/* Header */}
       <header className="py-10 text-center">
-        <h1 className="text-3xl font-display font-medium text-rose-900 tracking-tight">
+        <h1 className="text-3xl font-display font-bold text-rose-900 tracking-tight">
           Neglebiksen
         </h1>
         <p className="text-gray-400 text-sm mt-1">Book din tid online</p>
@@ -60,8 +72,18 @@ export default function BookingPage() {
                 }`}
               >
                 {i < stepIndex ? (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 ) : (
                   i + 1

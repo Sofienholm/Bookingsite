@@ -7,11 +7,15 @@ import { createCalendarEvent } from "@/lib/calendar/google";
 import { formatPhone } from "@/lib/utils";
 import { Booking } from "@/types";
 
+// Tillad større request body (base64 billeder)
+export const maxDuration = 30;
+export const dynamic = "force-dynamic";
+
 // POST /api/bookings — opret en booking
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { slotId, treatmentId, customerName, customerPhone } = body;
+    const { slotId, treatmentId, customerName, customerPhone, comment, imageUrl } = body;
 
     if (!slotId || !treatmentId || !customerName || !customerPhone) {
       return NextResponse.json(
@@ -75,6 +79,8 @@ export async function POST(req: NextRequest) {
         customerPhone: formatPhone(customerPhone),
         status: "confirmed",
         createdAt: new Date().toISOString(),
+        ...(comment ? { comment } : {}),
+        ...(imageUrl ? { imageUrl } : {}),
       };
 
       tx.set(bookingRef, newBooking);
@@ -88,7 +94,7 @@ export async function POST(req: NextRequest) {
     // 5. Send SMS og opret kalenderbegivenhed (uden for transaktionen)
     const phone = formatPhone(customerPhone);
 
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       notifyOwnerNewBooking(
         customerName,
         phone,
@@ -104,12 +110,23 @@ export async function POST(req: NextRequest) {
         booking.time,
         treatment.durationMinutes
       ).then(async (googleEventId) => {
-        await db
-          .collection("bookings")
-          .doc(booking.id)
-          .update({ googleEventId });
+        console.log("[Kalender] Event oprettet med ID:", googleEventId);
+        if (googleEventId) {
+          await db
+            .collection("bookings")
+            .doc(booking.id)
+            .update({ googleEventId });
+        }
       }),
     ]);
+
+    // Log fejl fra SMS og kalender
+    results.forEach((result, i) => {
+      const label = i === 0 ? "SMS" : "Kalender";
+      if (result.status === "rejected") {
+        console.error(`[${label}] Fejl:`, result.reason);
+      }
+    });
 
     return NextResponse.json({ success: true, data: booking });
   } catch (err) {

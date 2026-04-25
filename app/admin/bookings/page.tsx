@@ -22,6 +22,7 @@ export default function BookingsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const weekStart = startOfISOWeek(currentDate);
   const weekEnd = endOfISOWeek(currentDate);
@@ -127,9 +128,7 @@ export default function BookingsPage() {
                   </p>
                   <p
                     className={`text-lg font-semibold ${
-                      today
-                        ? "text-rose-500"
-                        : "text-gray-700"
+                      today ? "text-rose-500" : "text-gray-700"
                     }`}
                   >
                     {format(day, "d")}
@@ -142,11 +141,12 @@ export default function BookingsPage() {
                     <p className="text-xs text-gray-300 text-center py-4">—</p>
                   ) : (
                     dayBookings.map((booking) => (
-                      <div
+                      <button
                         key={booking.id}
-                        className={`rounded-xl p-2 text-xs border ${
+                        onClick={() => setSelectedBooking(booking)}
+                        className={`w-full text-left rounded-xl p-2 text-xs border cursor-pointer hover:shadow-md transition ${
                           booking.status === "confirmed"
-                            ? "bg-rose-50 border-rose-200"
+                            ? "bg-rose-50 border-rose-200 hover:border-rose-400"
                             : "bg-gray-50 border-gray-200 opacity-50"
                         }`}
                       >
@@ -159,23 +159,120 @@ export default function BookingsPage() {
                         <p className="text-gray-400 truncate">
                           {booking.treatmentName}
                         </p>
-                        {booking.status === "confirmed" && (
-                          <div className="mt-1.5">
-                            <CancelBookingButton
-                              bookingId={booking.id}
-                              slotId={booking.slotId}
-                              googleEventId={booking.googleEventId}
-                              onCancelled={fetchBookings}
-                            />
-                          </div>
+                        {(booking.comment || booking.imageUrl) && (
+                          <p className="text-rose-400 mt-1 text-[10px] font-medium">
+                            📎 Har vedhæftning
+                          </p>
                         )}
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Booking-detalje modal */}
+      {selectedBooking && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-display font-medium text-gray-800">
+                  {selectedBooking.customerName}
+                </h2>
+                <p className="text-sm text-gray-400 mt-0.5">
+                  {format(parseISO(selectedBooking.date), "EEEE d. MMMM yyyy", { locale: da })} kl. {selectedBooking.time}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Detaljer */}
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Behandling</span>
+                <span className="font-medium text-gray-800">{selectedBooking.treatmentName}</span>
+              </div>
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Telefon</span>
+                <a href={`tel:${selectedBooking.customerPhone}`} className="font-medium text-rose-500 hover:text-rose-600">
+                  {selectedBooking.customerPhone}
+                </a>
+              </div>
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Status</span>
+                <span className={`font-medium ${selectedBooking.status === "confirmed" ? "text-green-600" : "text-gray-400"}`}>
+                  {selectedBooking.status === "confirmed" ? "Bekræftet" : "Aflyst"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Oprettet</span>
+                <span className="text-gray-600">
+                  {format(parseISO(selectedBooking.createdAt), "d. MMM yyyy HH:mm", { locale: da })}
+                </span>
+              </div>
+            </div>
+
+            {/* Kommentar */}
+            {selectedBooking.comment && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Kommentar fra kunden</h3>
+                <div className="bg-rose-25 rounded-2xl p-4 text-sm text-gray-700 whitespace-pre-wrap">
+                  {selectedBooking.comment}
+                </div>
+              </div>
+            )}
+
+            {/* Billede */}
+            {selectedBooking.imageUrl && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Vedhæftet billede</h3>
+                <a href={selectedBooking.imageUrl} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={selectedBooking.imageUrl}
+                    alt="Kundebillede"
+                    className="w-full rounded-2xl border border-rose-100 hover:opacity-90 transition cursor-zoom-in"
+                  />
+                </a>
+              </div>
+            )}
+
+            {/* Handlinger */}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="flex-1 px-4 py-2.5 rounded-2xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+              >
+                Luk
+              </button>
+              {selectedBooking.status === "confirmed" && (
+                <CancelBookingButton
+                  bookingId={selectedBooking.id}
+                  slotId={selectedBooking.slotId}
+                  googleEventId={selectedBooking.googleEventId}
+                  onCancelled={() => {
+                    setSelectedBooking(null);
+                    fetchBookings();
+                  }}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
